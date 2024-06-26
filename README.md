@@ -27,10 +27,15 @@ cp .env.example .env
 Open the .env file and update the necessary database settings:
 
 DB_CONNECTION=pgsql
+
 DB_HOST=postgres
+
 DB_PORT=5432
+
 DB_DATABASE=onevision
+
 DB_USERNAME=root
+
 DB_PASSWORD=root
 
 Step 3: Install Dependencies
