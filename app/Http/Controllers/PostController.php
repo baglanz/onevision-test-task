@@ -90,7 +90,7 @@ class PostController extends Controller
         $dummyPostId = $dummyPost->id;
 
         $post = $request->user()->posts()->create([
-            'dummy_post_id' => $dummyPostId - 1,
+            'dummy_post_id' => rand(0, $dummyPostId - 1),
         ]);
 
         return response()->json([
