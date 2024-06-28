@@ -5,162 +5,76 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CreatePostRequest;
 use App\Http\Requests\DeletePostRequest;
 use App\Http\Requests\UpdatePostRequest;
-use App\Models\Post;
-use App\Services\DummyJson;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use App\Services\PostService;
 
 class PostController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    protected $postService;
+
+    public function __construct(PostService $postService)
+    {
+        $this->postService = $postService;
+    }
+
     public function index()
     {
-        $posts = Post::paginate(10);
+        $result = $this->postService->getPaginatedPosts();
 
-        $transformedPosts = $posts->map(function ($post) {
-            $dummyPostData = DummyJson::get($post->dummy_post_id);
-
-            return [
-                'id' => $post->id,
-                'title' => $dummyPostData->title,
-                'author' => $post->user->name,
-                'body' => str($dummyPostData->body)->limit(128),
-            ];
-        });
-
-        return response()->json([
-            'posts' => $transformedPosts,
-            'pagination' => [
-                'current_page' => $posts->currentPage(),
-                'per_page' => $posts->perPage(),
-                'total' => $posts->total(),
-            ]
-        ]);
+        return response()->json($result);
     }
 
     public function show(string $id)
     {
-        $post = Post::find($id);
+        $post = $this->postService->getPostWithDummyData($id);
 
-        if ( ! $post) {
+        if (!$post) {
             return response()->json([
                 'error' => 'Post not found',
             ], 404);
         }
 
-        $dummyPost = DummyJson::get($post->dummy_post_id);
-
-        if (! $dummyPost) {
-            return response()->json([
-                'error' => 'Something went wrong',
-            ]);
-        }
-
-        return response()->json([
-            'id' => $post->id,
-            'user_id' => $post->user_id,
-            'title' => $dummyPost->title,
-            'body' => $dummyPost->body,
-            'created_at' => $post->created_at,
-            'updated_at' => $post->updated_at,
-        ]);
+        return response()->json($post);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(CreatePostRequest $request)
     {
         $data = $request->validated();
 
-        $dummyPost = DummyJson::create([
-            'title' => $data['title'],
-            'body' => $data['body'],
-            'userId' => $request->user()->id,
-        ]);
+        $post = $this->postService->createPost($data, $request->user()->id);
 
-        if (! $dummyPost) {
+        if (!$post) {
             return response()->json([
                 'error' => 'Something went wrong',
             ]);
         }
 
-        $dummyPostId = $dummyPost->id;
-
-        $post = $request->user()->posts()->create([
-            'dummy_post_id' => rand(0, $dummyPostId - 1),
-        ]);
-
-        return response()->json([
-            'id' => $post->id,
-            'user_id' => $post->user_id,
-            'title' => $data['title'],
-            'body' => $data['body'],
-            'created_at' => $post->created_at,
-            'updated_at' => $post->updated_at,
-        ]);
+        return response()->json($post);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdatePostRequest $request, string $id)
     {
         $data = $request->validated();
 
-        $post = Post::find($id);
+        $post = $this->postService->updatePost($id, $data);
 
-        if ( ! $post) {
+        if (!$post) {
             return response()->json([
                 'error' => 'Post not found',
             ], 404);
         }
 
-        $dummyPost = DummyJson::update([
-            'title' => $data['title'],
-            'body' => $data['body'],
-        ], $post->dummy_post_id);
-
-        if (! $dummyPost) {
-            return response()->json([
-                'error' => 'Something went wrong',
-            ]);
-        }
-
-        return response()->json([
-            'id' => $post->id,
-            'user_id' => $post->user_id,
-            'title' => $data['title'],
-            'body' => $data['body'],
-            'created_at' => $post->created_at,
-            'updated_at' => $post->updated_at,
-        ]);
+        return response()->json($post);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(DeletePostRequest $request, string $id)
     {
-        $post = Post::find($id);
+        $deleted = $this->postService->deletePost($id);
 
-        if ( ! $post) {
+        if (!$deleted) {
             return response()->json([
                 'error' => 'Post not found',
             ], 404);
         }
-
-        $isDeleted = DummyJson::delete($post->dummy_post_id);
-
-        if (! $isDeleted) {
-            return response()->json([
-                'error' => 'Something went wrong',
-            ]);
-        }
-
-        $post->delete();
 
         return response()->json();
     }
