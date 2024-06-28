@@ -6,11 +6,16 @@ use Illuminate\Support\Facades\Http;
 
 class DummyJson
 {
+    protected static function getBaseUrl()
+    {
+        return config('dummyjson.base_url');
+    }
+
     public static function get($id) : null|object
     {
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-        ])->get('https://dummyjson.com/posts/' . $id);
+        ])->get(self::getBaseUrl() . $id);
 
         if (! $response->successful()) {
             return null;
@@ -23,7 +28,7 @@ class DummyJson
     {
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-        ])->post('https://dummyjson.com/posts/add', $data);
+        ])->post(self::getBaseUrl() . 'add', $data);
 
         if (! $response->successful()) {
             return null;
@@ -36,7 +41,7 @@ class DummyJson
     {
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-        ])->put('https://dummyjson.com/posts/' . $id, $data);
+        ])->put(self::getBaseUrl() . $id, $data);
 
         if (! $response->successful()) {
             return null;
@@ -49,7 +54,7 @@ class DummyJson
     {
         $response = Http::withHeaders([
             'Content-Type' => 'application/json',
-        ])->delete('https://dummyjson.com/posts/' . $id);
+        ])->delete(self::getBaseUrl() . $id);
 
         if (! $response->successful()) {
             return false;
